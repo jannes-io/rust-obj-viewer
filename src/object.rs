@@ -11,10 +11,10 @@ pub struct Object {
 impl Object {
     pub fn new() -> Self {
         Object {
-            position: Vec3::new(),
-            rotation: Vec3::new(),
+            position: Vec3::ORIGIN,
+            rotation: Vec3::ORIGIN,
             scale: Vec3 { x: 1.0, y: 1.0, z: 1.0 },
-            triangles: vec![],
+            triangles: Vec::new(),
         }
     }
 }

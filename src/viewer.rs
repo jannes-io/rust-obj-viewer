@@ -1,7 +1,10 @@
 extern crate sdl2;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::mouse::RelativeMouseState;
 use sdl2::pixels::Color;
+
+use std::collections::HashSet;
 
 mod camera;
 use crate::geometry::*;
@@ -60,6 +63,19 @@ impl Viewer {
                     _ => {}
                 }
             }
+
+            let keystate: HashSet<Keycode> = self
+                .event_pump
+                .keyboard_state()
+                .pressed_scancodes()
+                .filter_map(Keycode::from_scancode)
+                .collect();
+            self.handle_keyboard(&keystate);
+
+            let mousestate: RelativeMouseState = self.event_pump.relative_mouse_state();
+            self.camera.rotation.y += f64::from(mousestate.x()) / 1000.0;
+            self.camera.rotation.x += f64::from(mousestate.y()) / 1000.0;
+
             self.canvas.set_draw_color(Color::RGB(21, 21, 21));
             self.canvas.clear();
             self.draw_object().expect("Could not draw object");
@@ -67,9 +83,32 @@ impl Viewer {
         }
     }
 
+    fn handle_keyboard(&mut self, keys: &HashSet<Keycode>) {
+        let speed = if keys.contains(&Keycode::LShift) {
+            1.0
+        } else {
+            0.1
+        };
+
+        self.camera.translate(Vec3::new(
+            f64::from(keys.contains(&Keycode::A) as i32) * speed
+                + f64::from(keys.contains(&Keycode::D) as i32) * -speed,
+            f64::from(keys.contains(&Keycode::Q) as i32) * speed
+                + f64::from(keys.contains(&Keycode::E) as i32) * -speed,
+            f64::from(keys.contains(&Keycode::W) as i32) * speed
+                + f64::from(keys.contains(&Keycode::S) as i32) * -speed,
+        ));
+    }
+
     fn draw_object(&mut self) -> Result<(), String> {
         self.canvas.set_draw_color(Color::RGB(255, 255, 255));
         for (v1, v2, v3) in &self.object.triangles {
+            if self.camera.offset(v1.pos).z < 0.0
+                || self.camera.offset(v2.pos).z < 0.0
+                || self.camera.offset(v3.pos).z < 0.0
+            {
+                continue;
+            }
             let p1 = self.camera.project_vec(&v1.pos);
             let p2 = self.camera.project_vec(&v2.pos);
             let p3 = self.camera.project_vec(&v3.pos);
