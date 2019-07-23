@@ -4,7 +4,7 @@ use crate::geometry::*;
 use crate::object::Object;
 
 fn str_to_vec3(s: &str) -> Option<Vec3> {
-    let bits: Vec<&str> = s.split(" ").collect();
+    let bits: Vec<&str> = s.trim().split(" ").collect();
     if bits.len() != 3 {
         None
     } else {
@@ -18,7 +18,7 @@ fn str_to_vec3(s: &str) -> Option<Vec3> {
 
 fn str_to_vec2(s: &str) -> Option<Vec2> {
     let bits: Vec<&str> = s.split(" ").collect();
-    if bits.len() != 2 {
+    if bits.len() < 2 {
         None
     } else {
         Some(Vec2 {
@@ -45,7 +45,7 @@ fn str_to_vertex_description(s: &str) -> Option<VertexDescription> {
 }
 
 fn str_to_triangle_description(s: &str) -> Option<TriangleDescription> {
-    let bits: Vec<&str> = s.split(" ").collect();
+    let bits: Vec<&str> = s.trim().split(" ").collect();
     if bits.len() != 3 {
         None
     } else {
@@ -65,23 +65,27 @@ pub fn parse(path: String) -> Object {
     let mut uvs: Vec<Vec2> = vec![];
     let mut triangle_descriptions: Vec<TriangleDescription> = vec![];
 
-    for line in lines {
+    for (i, line) in lines.collect::<Vec<&str>>().iter().enumerate() {
+        if line.len() < 2 {
+            continue;
+        }
+
         match &line[0..2] {
             "v " => match str_to_vec3(&line[2..]) {
                 Some(vec3) => positions.push(vec3),
-                None => panic!("Malformed 'v' value!"),
+                None => panic!("Malformed 'v' value at {}!", i),
             },
             "vn" => match str_to_vec3(&line[3..]) {
                 Some(vec3) => normals.push(vec3),
-                None => panic!("Malformed 'vn' value!"),
+                None => panic!("Malformed 'vn' value at {}!", i),
             },
             "vt" => match str_to_vec2(&line[3..]) {
                 Some(vec2) => uvs.push(vec2),
-                None => panic!("Malformed 'vt' value!"),
+                None => panic!("Malformed 'vt' value at {}!", i),
             },
             "f " => match str_to_triangle_description(&line[2..]) {
                 Some(td) => triangle_descriptions.push(td),
-                None => panic!("Malformed 'f' value!"),
+                None => panic!("Malformed 'f' value at {}!", i),
             },
             _ => {}
         }
